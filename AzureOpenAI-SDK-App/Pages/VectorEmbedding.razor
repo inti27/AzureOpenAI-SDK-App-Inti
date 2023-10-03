@@ -1,0 +1,156 @@
+﻿@page "/VectorEmbedding"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using Microsoft.Azure.Cosmos;
+
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+<PageTitle>Azure OpenAI SDK - Vector Embeddings SEarch </PageTitle>
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">OpenAI Embeddings Search Test Page</h1>
+<hr />
+<br />
+
+<div style="background-color:aliceblue;margin:10px;" class="card">
+    <div class="card-header">
+        <label style="color:blue;font-family:'Comic Sans MS';font-weight:bold;font-size:large;text-decoration:underline;">Embedding Vector Search (Azure Cosmos DB)</label>
+        <br /><br />
+        <label style="color:blue;font-family:'Comic Sans MS';font-size:medium; font-style:italic;">Search the Microsoft Windows365 FAQs (https://www.microsoft.com/en-us/windows-365/faq) and get a list of top 5 candidates using their embedding vector cosine similarity scores. FAQs have been converted to embedding vectors and stored on Azure Cosmos DB.</label>
+    </div>
+    <div class="card-body">
+       
+        <div>
+            <label style="font-family:'Comic Sans MS';color:blue;margin:5px;">Enter key words(s) to search: </label>
+            <input style="margin:5px;" @bind=cosmos_search_string />
+            <button class="btn btn-primary" @onclick=SearchCosmosList>Search</button>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div>
+            <textarea readonly="readonly" style="font-family:'Comic Sans MS';font-size:medium;color:black;width:75%; height:250px;">@input_phrase_search_result</textarea>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    //class variables
+    OpenAIClient client;
+
+    //defaults
+    private string current_model { get; set; } = AzureOpenAIModel;
+    private string input_phrase { get; set; } = string.Empty;
+    private string input_phrase_list { get; set; } = string.Empty;
+    private string input_phrase_search_result { get; set; } = string.Empty;
+    private string cosmos_search_string { get; set; } = string.Empty;
+
+    Azure.AI.OpenAI.Embeddings search_object;
+
+    #region Search Methods
+
+    private void SearchCosmosList()
+    {
+
+        input_phrase_search_result = string.Empty;
+
+        if (cosmos_search_string.Length > 3)
+        {
+
+            CreateCosmosSearchEmbedding(cosmos_search_string);
+            foreach (var v in cosmos_items)
+            {
+                double consine_dif = GetCosineSimilarity(v.text_data.embedding, cosmos_search_object.text_data.embedding);
+                v.score = consine_dif;
+            }
+        }
+
+        ////get top 5 candidates
+        //List<EmbeddingObject> search_objects_sorted = cosmos_items.OrderByDescending(o => o.score).ToList();
+        //search_final_result = string.Empty;
+        //for (int i = 0; i < 5; i++)
+        //{
+        //    input_phrase_search_result += $"({i + 1}) [Score: {search_objects_sorted[i].score.ToString(".000")}] -- {search_objects_sorted[i].text_value}\n ";
+        //}
+    }
+
+    private async Task<string> CreateCosmosSearchEmbedding(string txt_to_encode)
+    {
+        //EmbeddingsOptions options = new EmbeddingsOptions() { }.Inputs.Add(txt_to_encode);
+
+        EmbeddingsOptions options = new EmbeddingsOptions();
+
+        var response = await client.GetEmbeddingsAsync(current_model, options);
+
+        var embedding_response = response.Value.Data[0].Embedding;
+
+        return embedding_response.ToString();
+
+    }
+
+
+        #endregion
+
+        #region Load Data
+
+        private List<EmbeddingObject> cosmos_items { get; set; } = new List<EmbeddingObject>();
+
+        private EmbeddingObject cosmos_search_object { get; set; } = new EmbeddingObject();
+
+        private async void LoadCosmosData()
+        {
+            cosmos_items.Clear();
+            using (CosmosClient cCosmos = new CosmosClient("https://openai.documents.azure.com:443/", "AhQiZFuc1zVyHCHZGjpyZbmP62TByB9RuZ07sIgxNG6jlSm8n2dLsQtBlMNiXhsOP92KWpW1l7k3ACDbrdniEw=="))
+            {
+                Microsoft.Azure.Cosmos.Container container = cCosmos.GetContainer("SampleData", "Complaint");
+
+                // Read item from container
+
+                var sqlQueryText = "SELECT * FROM c";
+
+                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+
+                FeedIterator<EmbeddingObject> queryResultSetIterator = container.GetItemQueryIterator<EmbeddingObject>(queryDefinition);
+
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<EmbeddingObject> currentResults = await queryResultSetIterator.ReadNextAsync();
+                    foreach (EmbeddingObject t in currentResults)
+                    {
+                        //add to main list
+                        cosmos_items.Add(t);
+                        //add to display area
+                        //input_phrase_list += $"{t.text_value}\n";
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region General Methods
+
+        public static double GetCosineSimilarity(List<float> V1, List<float> V2)
+        {
+            int N = 0;
+            N = ((V2.Count < V1.Count) ? V2.Count : V1.Count);
+            double dot = 0.0d;
+            double mag1 = 0.0d;
+            double mag2 = 0.0d;
+            for (int n = 0; n < N; n++)
+            {
+                dot += V1[n] * V2[n];
+                mag1 += Math.Pow(V1[n], 2);
+                mag2 += Math.Pow(V2[n], 2);
+            }
+
+            return dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2));
+        }
+
+        protected override void OnInitialized()
+        {
+            LoadCosmosData();
+        }
+
+        #endregion
+
+}
