@@ -15,12 +15,12 @@ public static class KeyManager
     // It's a secret, so we don't want to check it into source control.
     // Instead, we'll use the .NET user secrets feature to store it locally.
     //public static string SecretKey => UseAzure ? Config["AzureOpenAIKey"] : Config["OpenAIKey"];
-    public static string SecretKey => "30f46bcc2ea7469b89f704c45e7e556c";
+    public static string SecretKey => "";
 
     // These are the URLs and model names for the Azure OpenAI service. They are different from the OpenAI service
     // and are only needed if you're using the Azure service because they'll be unique to your Azure deployment.
     //public static string AzureOpenAIUrl => Config["AzureOpenAIUrl"];
-    public static string AzureOpenAIUrl => "https://inti-ai-sample.openai.azure.com/";
+    public static string AzureOpenAIUrl => "";
 
 
     //public static string AzureOpenAIModel => Config["AzureOpenAIModel"];
