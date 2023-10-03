@@ -1,0 +1,164 @@
+﻿@page "/TextGen"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+<PageTitle>Azure OpenAI SDK - Text Generation</PageTitle>
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">Azure OpenAI SDK - Text Generation</h1>
+<hr />
+<br />
+<div class="card" style="background-color:aliceblue;margin:15px;">
+    <div class="card-header" style="text-align:center;">
+        <label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Sample is using GPT3.5 Turbo (16K) </label>
+    </div>
+    <div class="card-body" style="text-align:left;">
+        <div class="card-title"><label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Add a role...</label></div>
+        <select @onchange="MsgRoleChanged" style="width:80%; height:40px;">
+            <option value="none"></option>
+            <option value="system">system</option>
+            <option value="assistant">assistant</option>
+            <option value="user">user</option>
+            <option value="function">function</option>
+        </select>
+        <br />
+        <div class="card-title"><label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Add content... </label></div>
+        <textarea type="text" @bind="msg_content" style="width:80%; height:40px;" />
+        <br />
+        <button class="btn btn-primary" @onclick="AddToList">Add to List</button>
+        <button class="btn btn-warning" @onclick="ClearList">Clear List</button>
+    </div>
+    <div class="card-header" style="text-align:left;">
+        <textarea readonly="readonly" type="text" @bind="current_msgs_string" style="width:80%; height:100px;" />
+        <table class="table table-bordered" style="width:80%;">
+            <tr>
+                <td><label style="font-size:medium;color:blue;font-family:'Comic Sans MS';">model: </label></td>
+                <td><input @bind=current_model /></td>
+                <td><label style="font-size:medium;color:blue;font-family:'Comic Sans MS';">max tokens: </label></td>
+                <td><input @bind=in_max_tokens /></td>
+            </tr>
+            <tr>
+                <td><label style="font-size:medium;color:blue;font-family:'Comic Sans MS';">temperature: </label></td>
+                <td><input @bind=in_temperature /></td>
+                <td><label style="font-size:medium;color:blue;font-family:'Comic Sans MS';">Nucleus Sampling Factor: </label></td>
+                <td><input @bind=in_NucleusSamplingFactor /></td>
+            </tr>
+        </table>
+        
+    </div>
+    <div class="card-body" style="text-align:left;">
+        <button class="btn btn-primary" @onclick="RunModel">Run model...</button>
+    </div>
+    <div class="card-footer" style="text-align:left;">
+        <label style="color:blue;font-family:'Comic Sans MS';font-size:medium; font-weight:bold;">Results: @reason_finish</label>
+        <br />
+        <textarea readonly="readonly" style="width:80%; height:200px" @bind="result_text"></textarea>
+    </div>
+</div>
+
+@code {
+
+    #region Variables
+
+    //class variables
+    OpenAIClient client;
+    private ChatMessage current_msgs { get; set; } = new ChatMessage();
+    // Set the options for the chat completion
+    private ChatCompletionsOptions options = new ChatCompletionsOptions();
+
+    //informational variables
+    private string? msg_role { get; set; } = string.Empty;
+    private string msg_content { get; set; } = string.Empty;
+    private string current_msgs_string { get; set; } = string.Empty;
+    private string reason_finish { get; set; } = string.Empty;
+    private string result_text { get; set; } = string.Empty;
+
+    //defaults
+    private string current_model { get; set; } = AzureOpenAIModel;
+    private float in_temperature { get; set; } = 0.1f;
+    private int in_max_tokens { get; set; } = 1000;
+    private float in_NucleusSamplingFactor { get; set; } = 0.95f;
+    #endregion
+
+    #region Generate Prompt
+
+    public void AddToList()
+    {
+        if (msg_role.Length > 3 && msg_role != "none" && msg_content.Length > 3)
+        {
+            options.Temperature = in_temperature;
+            options.MaxTokens = in_max_tokens;
+            options.NucleusSamplingFactor = in_NucleusSamplingFactor;
+            options.FrequencyPenalty = 0f;
+            options.PresencePenalty = 0f;
+
+            options.Messages.Add(new ChatMessage() { Role = msg_role, Content = msg_content });
+            current_msgs_string += $"ROLE:\t{msg_role}\nCONTENT:\t{msg_content}\n\n";
+        }
+    }
+
+    public void ClearList()
+    {
+        current_msgs_string = string.Empty;
+        //msg_role = string.Empty;
+        msg_content = string.Empty;
+        options.Messages.Clear();
+        result_text = string.Empty;
+    }
+
+    private void MsgRoleChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "none")
+        {
+            msg_role = e.Value.ToString();
+        }
+    }
+
+    #endregion
+
+    #region Message Logic
+
+    public async Task<string> RunModel()
+    {
+        try
+        {
+            if (options.Messages.Count >= 1)
+            {
+                UseAzure = true;
+                if (UseAzure)
+                {
+                    client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+                }
+                else
+                {
+                    client = new OpenAIClient(SecretKey);
+                    current_model = "gpt-3.5-turbo";
+                }
+                //options.Messages.Add(new ChatMessage(ChatRole.User, prompt));
+                var response = await client.GetChatCompletionsAsync(current_model, options);
+
+                ChatCompletions completions = response.Value;
+
+                //
+                reason_finish = $"\t[Finish Reason: {completions.Choices[0].FinishReason.ToString()}]";
+                result_text = $"{completions.Choices[0].Message.Content.ToString()}";
+
+                return result_text;
+
+            }
+            else
+            {
+                result_text = "Please add content to send...";
+                return result_text;
+            }
+        }
+        catch (Exception ex)
+        {
+            result_text = ex.Message;
+            return result_text;
+        }
+    }
+
+    #endregion
+
+}

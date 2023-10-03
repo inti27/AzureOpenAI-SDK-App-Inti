@@ -1,0 +1,25 @@
+﻿@page "/PVA"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+<PageTitle>Azure OpenAI SDK - Text Generation</PageTitle>
+
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">ChatGPT and Power Virtual Agent</h1>
+<hr />
+<br />
+<div class="card" style="background-color:aliceblue;margin:15px;">
+    <div class="card-header" style="text-align:center;">
+        <label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Sample is using a Power Virtual Agent to connect to ChatGPT. Say Hello...</label>
+    </div>
+    <div class="card-body" style="text-align:center;">
+        @*ifram goes here*@
+
+        <iframe src="https://web.powerva.microsoft.com/environments/Default-e05c6635-e6ae-4253-8938-1abc94c2c449/bots/new_bot_7f8f4318ca2b47c6a2d72e17b8f09d84/webchat" frameborder="0" style="width: 85%; height: 450px; background-color:white;"></iframe>
+    </div>
+</div>
+
+@code {
+
+}
