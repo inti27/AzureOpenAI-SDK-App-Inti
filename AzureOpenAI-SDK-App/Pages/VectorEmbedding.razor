@@ -40,7 +40,7 @@
     //Azure.AI.OpenAI.Embeddings search_object;
 
     //defaults
-    private string current_model { get; set; } = AzureOpenAIEmbeddingModel;
+    private string current_model { get; set; } = AzureOpenAIEmbeddingModel;   //AzureOpenAIEmbeddingModel
     private string input_phrase { get; set; } = string.Empty;
     private string input_phrase_list { get; set; } = string.Empty;
     private string input_phrase_search_result { get; set; } = string.Empty;
@@ -55,15 +55,17 @@
     {
 
         input_phrase_search_result = string.Empty;
+        client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
 
         if (cosmos_search_string.Length > 3)
         {
             //calling the embeddings sdk to get the embedding vector
             CreateCosmosSearchEmbedding(cosmos_search_string);
+
             //evaluting the returned ebedding with my list of embeddings from cosmos
             foreach (var v in cosmos_items)
             {
-                double consine_dif = GetCosineSimilarity(v.text_data.embedding, cosmos_search_object.text_data.embedding);
+                double consine_dif = GetCosineSimilarity(v.text_data.embedding, (System.Collections.Generic.List<float>)cosmos_search_object.text_data2);
                 v.score = consine_dif;
             }
         }
