@@ -24,6 +24,7 @@
 
 @code {
 
+    //class variables
     private string user_command { get; set; } = String.Empty;
     private string result_text { get; set; } = String.Empty;
     private OpenAIClient client;
@@ -33,6 +34,8 @@
 
     private void GetImages()
     {
+        //used to call the get image method with the entered text prompt
+
         result_text = String.Empty;
 
         if (user_command.Length > 0)
@@ -54,7 +57,7 @@
             //        var response = await client.GetChatCompletionsAsync(current_model, options);
 
             var image_gen = response.Value;
-
+            //return the image url to display on the page
             result_text = image_gen.Data[0].Url.ToString(); 
         }
 

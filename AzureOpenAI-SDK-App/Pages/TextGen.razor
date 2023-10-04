@@ -84,21 +84,25 @@
 
     public void AddToList()
     {
+        //add user entered text to the list of messages to build my prompt
         if (msg_role.Length > 3 && msg_role != "none" && msg_content.Length > 3)
         {
+            //add to text options
             options.Temperature = in_temperature;
             options.MaxTokens = in_max_tokens;
             options.NucleusSamplingFactor = in_NucleusSamplingFactor;
             options.FrequencyPenalty = 0f;
             options.PresencePenalty = 0f;
-
             options.Messages.Add(new ChatMessage() { Role = msg_role, Content = msg_content });
+
+            //display the current list of messages
             current_msgs_string += $"ROLE:\t{msg_role}\nCONTENT:\t{msg_content}\n\n";
         }
     }
 
     public void ClearList()
     {
+        //clear list of messages
         current_msgs_string = string.Empty;
         //msg_role = string.Empty;
         msg_content = string.Empty;
@@ -108,6 +112,7 @@
 
     private void MsgRoleChanged(ChangeEventArgs e)
     {
+        //capture the selected role
         if (e.Value.ToString() != "none")
         {
             msg_role = e.Value.ToString();
@@ -120,6 +125,7 @@
 
     public async Task<string> RunModel()
     {
+        //used to call the chat completion SDK to generate text based on the prompt
         try
         {
             if (options.Messages.Count >= 1)
@@ -134,12 +140,10 @@
                     client = new OpenAIClient(SecretKey);
                     current_model = "gpt-3.5-turbo";
                 }
-                //options.Messages.Add(new ChatMessage(ChatRole.User, prompt));
                 var response = await client.GetChatCompletionsAsync(current_model, options);
-
                 ChatCompletions completions = response.Value;
 
-                //
+                //display the results and the reason for finishing
                 reason_finish = $"\t[Finish Reason: {completions.Choices[0].FinishReason.ToString()}]";
                 result_text = $"{completions.Choices[0].Message.Content.ToString()}";
 
