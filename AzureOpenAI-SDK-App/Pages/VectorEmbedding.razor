@@ -104,7 +104,7 @@
         //load the previous saved embeddings data from cosmos into a list, which I will use to compare with the search string
 
         cosmos_items.Clear();
-        using (CosmosClient cCosmos = new CosmosClient("https://openai.documents.azure.com:443/", "AhQiZFuc1zVyHCHZGjpyZbmP62TByB9RuZ07sIgxNG6jlSm8n2dLsQtBlMNiXhsOP92KWpW1l7k3ACDbrdniEw=="))
+        using (CosmosClient cCosmos = new CosmosClient(AzureCosmosDBUrl, AzureCosmosDBKey))
         {
             Microsoft.Azure.Cosmos.Container container = cCosmos.GetContainer("SampleData", "Complaint");
 
