@@ -1,0 +1,64 @@
+﻿@page "/Images"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">Azure OpenAI Image Generator</h1>
+<hr />
+<br />
+
+<div style="margin:10px;background-color:aliceblue;" class="card">
+    <div class="card-header">
+        <label style="font-size:large;width:500px;color:blue;font-family:'Comic Sans MS';">Please describe your desired image...</label>
+        <br />
+        <textarea type="text" @bind="user_command" style="width:50%; height:750;" />
+    </div>
+    <div class="card-body">
+        <button class="btn btn-primary" @onclick="GetImages">Click Here...</button>
+    </div>
+    <div class="card-footer">
+        <img src="@result_text" width="750" height="750" />
+    </div>
+</div>
+
+@code {
+
+    private string user_command { get; set; } = String.Empty;
+    private string result_text { get; set; } = String.Empty;
+    private OpenAIClient client;
+
+    //defaults
+    private string current_model { get; set; } = AzureOpenAIModel;
+
+    private void GetImages()
+    {
+        result_text = String.Empty;
+
+        if (user_command.Length > 0)
+        {
+            bool UseAzure = true;
+            if (UseAzure)
+            {
+                client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+            }
+            else
+            {
+                client = new OpenAIClient(SecretKey);
+            }
+
+            var options = new ImageGenerationOptions() { ImageCount = 1, Prompt = user_command, Size = "256x256" };
+
+            var response = client.GetImageGenerations(options);
+
+            //        var response = await client.GetChatCompletionsAsync(current_model, options);
+
+            var image_gen = response.Value;
+
+            result_text = image_gen.Data[0].Url.ToString(); 
+        }
+
+       // return result_text;
+    }
+
+}

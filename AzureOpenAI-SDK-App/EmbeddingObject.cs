@@ -1,9 +1,13 @@
-﻿namespace AzureOpenAI_SDK_App
+﻿using Microsoft.VisualBasic;
+using System;
+
+namespace AzureOpenAI_SDK_App
 {
     public class EmbeddingObject
     {
         public string text_value { get; set; }
         public Data text_data { get; set; }
+        public System.Collections.Generic.IReadOnlyList<float> text_data2 { get; set; }
         public double score { get; set; }
         public string id { get; set; }
         public string key { get; set; }
