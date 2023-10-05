@@ -32,11 +32,11 @@
     //defaults
     private string current_model { get; set; } = AzureOpenAIModel;
 
-    private void GetImages()
+    private async Task GetImages()
     {
         //used to call the get image method with the entered text prompt
 
-        result_text = String.Empty;
+        result_text = "...Drawing your image...";
 
         if (user_command.Length > 0)
         {
@@ -52,7 +52,7 @@
 
             var options = new ImageGenerationOptions() { ImageCount = 1, Prompt = user_command, Size = "256x256" };
 
-            var response = client.GetImageGenerations(options);
+            var response = await client.GetImageGenerationsAsync(options);
 
             //        var response = await client.GetChatCompletionsAsync(current_model, options);
 

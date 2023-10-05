@@ -74,7 +74,7 @@
     private string result_text { get; set; } = string.Empty;
 
     //defaults
-    private string current_model { get; set; } = AzureOpenAIModel;
+    private string current_model { get; set; } = AzureOpenAIGPTModel;
     private float in_temperature { get; set; } = 0.1f;
     private int in_max_tokens { get; set; } = 1000;
     private float in_NucleusSamplingFactor { get; set; } = 0.95f;
@@ -126,6 +126,8 @@
     public async Task<string> RunModel()
     {
         //used to call the chat completion SDK to generate text based on the prompt
+
+        result_text = "...Generating Text...";
         try
         {
             if (options.Messages.Count >= 1)
@@ -133,7 +135,7 @@
                 UseAzure = true;
                 if (UseAzure)
                 {
-                    client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+                    client = new OpenAIClient(new Uri(AzureOpenAIUrlGPT), new AzureKeyCredential(SecretKeyGPT));
                 }
                 else
                 {

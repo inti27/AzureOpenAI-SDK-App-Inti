@@ -1,0 +1,97 @@
+﻿@page "/AudioTranscription"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">Azure OpenAI SDK - Audio Transcription</h1>
+<hr />
+<br />
+
+<div style="margin:10px;background-color:aliceblue;" class="card">
+    <div class="card-header">
+        <label style="font-size:large;width:500px;color:blue;font-family:'Comic Sans MS';">Please upload the file for transcription...</label>
+        <br />
+        <InputFile OnChange="LoadFiles"></InputFile>
+    </div>
+    <div class="card-body">
+        <button class="btn btn-primary" @onclick="TranscribeFile">Click Here...</button>
+    </div>
+    <div class="card-footer">
+        <textarea readonly="readonly" style="width:80%; height:200px" @bind="result_text"></textarea>
+    </div>
+</div>
+
+@code {
+    #region class variables and defaults
+
+    private string result_text { get; set; } = string.Empty;
+    private BinaryData user_file { get; set; } = null;
+    private OpenAIClient client;
+    private List<IBrowserFile> loadedFiles = new();
+    private string current_model { get; set; } = AzureOpenAIModelAudio;
+    private float in_temperature { get; set; } = 0.1f;
+    private string language { get; set; } = "en";
+    #endregion
+
+    private  async Task TranscribeFile()
+    {
+        try
+        {
+            result_text = loadedFiles[0].Name;
+
+            bool UseAzure = true;
+            if (UseAzure)
+            {
+                client = new OpenAIClient(new Uri(AzureOpenAIUrlAudio), new AzureKeyCredential(SecretKeyAudio));
+            }
+            else
+            {
+                client = new OpenAIClient(SecretKey);
+            }
+
+            /////////Binary data test
+            //BinaryData in_file = new BinaryData(loadedFiles[0].OpenReadStream(99999999999999999));
+
+            //BinaryData in_file = new BinaryData(loadedFiles[0].)
+
+
+            ///////////////File converting to Byte[]
+            //IBrowserFile file = loadedFiles[0];
+
+            long length = loadedFiles[0].Size;
+
+            using var fileStream = loadedFiles[0].OpenReadStream(999999999999999);
+            byte[] bytes = new byte[length];
+            await fileStream.ReadAsync(bytes, 0, (int)loadedFiles[0].Size);
+
+            BinaryData in_file = new BinaryData(bytes);
+
+            /////////////////
+
+            AudioTranscriptionOptions options = new AudioTranscriptionOptions() { AudioData = in_file, Language = language, ResponseFormat = AudioTranscriptionFormat.Simple, Temperature = in_temperature };
+            var response = client.GetAudioTranscription(current_model, options);
+
+            result_text = response.Value.ToString();
+        }
+        catch (Exception ex)
+        {
+            result_text = ex.Message;
+        }
+
+    }
+
+    private void LoadFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles(1))
+        {
+            try
+            {
+                loadedFiles.Add(file);
+            }
+            catch (Exception ex)
+            {
+                result_text = ex.Message;
+            }
+        }
+    }
+}

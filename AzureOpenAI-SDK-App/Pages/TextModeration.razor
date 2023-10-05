@@ -1,0 +1,49 @@
+﻿@page "/TextModeration"
+@using Azure;
+@using Azure.AI.OpenAI;
+@using static AzureOpenAI_SDK_App.KeyManager;
+
+<PageTitle>Azure OpenAI SDK - Text Moderation</PageTitle>
+
+<h1 style="text-align:center;color:blue;font-family:'Verdana';font-weight:bold;">Azure OpenAI SDK - Text Moderation</h1>
+<hr />
+<br />
+<div class="card" style="background-color:aliceblue;">
+    <div class="card-header">
+        <label style="color:blue;font-family:'Verdana';font-weight:bold;font-size:large;text-decoration:underline;">Text Moderations </label>
+        <br /><br />
+        <label style="color:blue;font-family:'Verdana';font-size:medium; font-style:italic;">Enter the text to review, click the 'Scan' button and view the results below. Sample using the 'text-moderation-latest' model.</label>
+    </div>
+    <div class="card-body">
+        <textarea style="width:75%;height:100px;" @bind=text_to_moderate></textarea>
+        <br />
+    </div>
+    <div class="card-footer">
+        <label style="color:blue;font-family:Verdana;font-size:medium; font-weight:bold;">Results: </label>
+        <br />
+        <textarea readonly="readonly" style="color:blue;font-family:Verdana;font-size:medium;width:75%;height:200px;" @bind=moderation_results></textarea>
+        <br />
+        <button style="font-size:large;" @onclick=ModerateText class="btn btn-primary">Scan...</button>
+    </div>
+</div>
+
+@code {
+    #region class variables and defaults
+
+    private string text_to_moderate { get; set; } = string.Empty;
+    private string moderation_results { get; set; } = string.Empty;
+    OpenAIClient client;
+
+    private async void ModerateText()
+    {
+        //moderation_results = string.Empty;
+        client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+
+        AudioTranscriptionOptions options = new AudioTranscriptionOptions();
+
+        //var result = await client.(text_to_moderate);
+        //moderation_results = result.Classification.Category1.Label;
+    
+    }
+    #endregion
+}
