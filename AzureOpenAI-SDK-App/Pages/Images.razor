@@ -16,6 +16,7 @@
     </div>
     <div class="card-body">
         <button class="btn btn-primary" @onclick="GetImages">Click Here...</button>
+        <label @bind="info_text"></label>
     </div>
     <div class="card-footer">
         <img src="@result_text" width="750" height="750" />
@@ -24,44 +25,62 @@
 
 @code {
 
+    #region class variables and defaults
+
     //class variables
     private string user_command { get; set; } = String.Empty;
     private string result_text { get; set; } = String.Empty;
+    private string info_text { get; set; } = String.Empty;
     private OpenAIClient client;
 
     //defaults
     private string current_model { get; set; } = AzureOpenAIModel;
 
+    #endregion
+
+    #region Class Methods
+
     private async Task GetImages()
     {
         //used to call the get image method with the entered text prompt
 
-        result_text = "...Drawing your image...";
-
-        if (user_command.Length > 0)
+        try
         {
-            bool UseAzure = true;
-            if (UseAzure)
+
+            info_text = "...Drawing your image...";
+
+            if (user_command.Length > 0)
             {
-                client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+                bool UseAzure = true;
+                if (UseAzure)
+                {
+                    client = new OpenAIClient(new Uri(AzureOpenAIUrl), new AzureKeyCredential(SecretKey));
+                }
+                else
+                {
+                    client = new OpenAIClient(SecretKey);
+                }
+
+                var options = new ImageGenerationOptions() { ImageCount = 1, Prompt = user_command, Size = "256x256" };
+
+                var response = await client.GetImageGenerationsAsync(options);
+
+                //        var response = await client.GetChatCompletionsAsync(current_model, options);
+
+                var image_gen = response.Value;
+                //return the image url to display on the page
+                result_text = image_gen.Data[0].Url.ToString();
+                info_text = string.Empty;
             }
-            else
-            {
-                client = new OpenAIClient(SecretKey);
-            }
-
-            var options = new ImageGenerationOptions() { ImageCount = 1, Prompt = user_command, Size = "256x256" };
-
-            var response = await client.GetImageGenerationsAsync(options);
-
-            //        var response = await client.GetChatCompletionsAsync(current_model, options);
-
-            var image_gen = response.Value;
-            //return the image url to display on the page
-            result_text = image_gen.Data[0].Url.ToString(); 
+        }
+        catch (Exception ex)
+        {
+            info_text = "Error: " + ex.Message;
         }
 
        // return result_text;
     }
+
+    #endregion
 
 }

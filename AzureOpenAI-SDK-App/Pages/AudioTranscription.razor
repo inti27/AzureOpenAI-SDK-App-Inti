@@ -31,13 +31,16 @@
     private string current_model { get; set; } = AzureOpenAIModelAudio;
     private float in_temperature { get; set; } = 0.1f;
     private string language { get; set; } = "en";
+
     #endregion
+
+    #region Class Methods
 
     private  async Task TranscribeFile()
     {
         try
         {
-            result_text = loadedFiles[0].Name;
+            result_text = "...Transcribing your file...";
 
             bool UseAzure = true;
             if (UseAzure)
@@ -94,4 +97,6 @@
             }
         }
     }
+
+    #endregion
 }

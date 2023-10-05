@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>AzureOpenAI_SDK_App</RootNamespace>
+    <UserSecretsId>88d33239-a947-4238-a588-0a5fef459236</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
