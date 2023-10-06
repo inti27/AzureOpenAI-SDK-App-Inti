@@ -52,26 +52,18 @@
                 client = new OpenAIClient(SecretKey);
             }
 
-            /////////Binary data test
-            //BinaryData in_file = new BinaryData(loadedFiles[0].OpenReadStream(99999999999999999));
+            BinaryData in_file;
 
-            //BinaryData in_file = new BinaryData(loadedFiles[0].)
+            using (var fileStream = loadedFiles[0].OpenReadStream(999999999999999))
+            {
+                byte[] bytes = new byte[loadedFiles[0].Size];
+                await fileStream.ReadAsync(bytes, 0, (int)loadedFiles[0].Size);
 
+                in_file = new BinaryData(bytes);
 
-            ///////////////File converting to Byte[]
-            //IBrowserFile file = loadedFiles[0];
+            }
 
-            long length = loadedFiles[0].Size;
-
-            using var fileStream = loadedFiles[0].OpenReadStream(999999999999999);
-            byte[] bytes = new byte[length];
-            await fileStream.ReadAsync(bytes, 0, (int)loadedFiles[0].Size);
-
-            BinaryData in_file = new BinaryData(bytes);
-
-            /////////////////
-
-            AudioTranscriptionOptions options = new AudioTranscriptionOptions() { AudioData = in_file, Language = language, ResponseFormat = AudioTranscriptionFormat.Simple, Temperature = in_temperature };
+            AudioTranscriptionOptions options = new AudioTranscriptionOptions(in_file);
             var response = client.GetAudioTranscription(current_model, options);
 
             result_text = response.Value.ToString();
@@ -89,6 +81,8 @@
         {
             try
             {
+                if(loadedFiles.Count > 0) loadedFiles.Clear();
+
                 loadedFiles.Add(file);
             }
             catch (Exception ex)

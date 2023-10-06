@@ -1,0 +1,71 @@
+﻿@page "/TextSynthesizer"
+@using Azure;
+@using static AzureOpenAI_SDK_App.KeyManager;
+@using Microsoft.CognitiveServices.Speech;
+
+<PageTitle>Azure Cognitive Services SDK - Speech Synthesizer</PageTitle>
+
+<h1 style="text-align:center;color:blue;font-family:'Comic Sans MS';font-weight:bold;">Azure Cognitive Services SDK - Speech Synthesizer</h1>
+<hr />
+<br />
+<div class="card" style="background-color:aliceblue;">
+    <div class="card-header">
+        <label style="color:blue;font-family:'Comic Sans MS';font-weight:bold;font-size:large;text-decoration:underline;">Speech Synthesizer Sample</label>
+        <br /><br />
+        <label style="color:blue;font-family:'Comic Sans MS';font-size:medium; font-style:italic;">Enter the text to synthesize, click the 'Speak' button and listen to the results. Make sure your speakers are on and volume is up!</label>
+    </div>
+    <div class="card-body">
+        <textarea style="width:75%;height:100px;" @bind=text_to_synthesize></textarea>
+        @*       
+        <br />
+        <label style="color:blue;font-family:Comic Sans MS;font-size:medium; font-weight:bold;">Voice Name: </label>
+        <br />
+        <textarea @bind=VoiceInfo></textarea>
+        *@
+        
+    </div>
+    <div class="card-footer">
+        <button style="font-size:large;" @onclick=SynthesizeText class="btn btn-primary">Speak...</button>
+    </div>
+</div>
+
+@code {
+    #region class variables and defaults
+
+    private string text_to_synthesize { get; set; } = string.Empty;
+    private string VoiceInfo { get; set; } = "en-US-AriaNeural";
+
+    #endregion
+
+    #region Class Methods
+
+    public async Task<string> SynthesizeText()
+    {
+        try
+        {
+            if (text_to_synthesize.Length > 1)
+            {
+                var config = SpeechConfig.FromSubscription(AzureCognitiveSpeechKey, AzureCognitiveSpeechRegion);
+
+                // Set the voice name, refer to https://aka.ms/speech/voices/neural for full list.
+                config.SpeechSynthesisVoiceName = VoiceInfo;
+
+                // Creates a speech synthesizer.
+                using (var synthesizer = new SpeechSynthesizer(config))
+                {
+                    await synthesizer.SpeakTextAsync(text_to_synthesize);
+                }
+                return "Success";
+            }
+            return "Please enter text to synthesize...";
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
+    }
+
+    #endregion
+
+}
+
