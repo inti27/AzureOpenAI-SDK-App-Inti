@@ -1,4 +1,4 @@
-﻿@page "/TextGen"
+﻿@page "/TextGen2"
 @using Azure;
 @using Azure.AI.OpenAI;
 @using static AzureOpenAI_SDK_App.KeyManager;
@@ -9,8 +9,11 @@
 <hr />
 <br />
 <div class="card" style="background-color:aliceblue;margin:15px;">
-    <div class="card-header" style="text-align:center;">
-        <label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Sample is using GPT4 </label>
+    <div class="card-header" style="text-align:center; background-color:blue">
+        <label style="font-family:'Comic Sans MS'; color:white;font-size:x-large; font-weight:bold;">Sample is using GPT4 </label>
+    </div>
+    <div class="card-header" style="text-align:left; background-color:lightsteelblue">
+        <label style="font-size:large;color:white;font-weight:bold; font-family:'Comic Sans MS';">System Prompt Section (Optional)</label>
     </div>
     <div class="card-body" style="text-align:left;">
         <div class="card-title"><label style="font-family:'Comic Sans MS'; color:blue;font-size:large">Add a role...</label></div>
@@ -26,7 +29,8 @@
         <textarea type="text" @bind="msg_content" style="width:80%; height:40px;" />
         <br />
         <button class="btn btn-primary" @onclick="AddToList">Add to List</button>
-        <button class="btn btn-warning" @onclick="ClearList">Clear List</button>
+        <button class="btn btn-warning" @onclick="ClearQuestion">Clear Question</button>
+        <button class="btn btn-warning" @onclick="ClearAll">Clear All</button>
     </div>
     <div class="card-header" style="text-align:left;">
         <textarea readonly="readonly" type="text" @bind="current_msgs_string" style="width:80%; height:100px;" />
@@ -46,10 +50,15 @@
         </table>
         
     </div>
-    <div class="card-body" style="text-align:left;">
-        <button class="btn btn-primary" @onclick="RunModel">Run model...</button>
+    <div class="card-header" style="text-align:left; background-color:darkgoldenrod">
+        <label style="font-size:large;color:white;font-weight:bold; font-family:'Comic Sans MS';">Question Section</label>
     </div>
-    <div class="card-footer" style="text-align:left;">
+    <div class="card-body" style="text-align:left; background-color:lightgoldenrodyellow">
+        <label style="font-size:medium;color:blue;font-family:'Comic Sans MS';">Ask your question: </label>
+        <input style="width:500px" @bind=in_user_question />
+        <button class="btn btn-primary" @onclick="RunModel">Send...</button>
+    </div>
+    <div class="card-footer" style="text-align:left;background-color:lightyellow">
         <label style="color:blue;font-family:'Comic Sans MS';font-size:medium; font-weight:bold;">Results: @reason_finish</label>
         <br />
         <textarea readonly="readonly" style="width:80%; height:200px" @bind="result_text"></textarea>
@@ -72,6 +81,10 @@
     private string current_msgs_string { get; set; } = string.Empty;
     private string reason_finish { get; set; } = string.Empty;
     private string result_text { get; set; } = string.Empty;
+    private string in_user_question { get; set; } = string.Empty;
+    //
+    private List<ChatMessage> all_system_prompts { get; set; } = new List<ChatMessage>();
+
 
     //defaults
     private string current_model { get; set; } = AzureOpenAIGPTModel;
@@ -93,23 +106,50 @@
             options.NucleusSamplingFactor = in_NucleusSamplingFactor;
             options.FrequencyPenalty = 0f;
             options.PresencePenalty = 0f;
-            options.Messages.Add(new ChatMessage() { Role = msg_role, Content = msg_content });
+            //create a new Chart Message to add the current options and save in list for later use
+            ChatMessage TempMessage = new ChatMessage() { Role = msg_role, Content = msg_content };
+            options.Messages.Add(TempMessage);
 
             //display the current list of messages
             current_msgs_string += $"ROLE:\t{msg_role}\nCONTENT:\t{msg_content}\n\n";
+
+            //add new msg pormpt to the saved list
+            all_system_prompts.Add(TempMessage);
+
+            msg_content = String.Empty;
         }
     }
 
-    public void ClearList()
+    public void ClearAll()
     {
         //clear list of messages
         current_msgs_string = string.Empty;
-        //msg_role = string.Empty;
         msg_content = string.Empty;
         options.Messages.Clear();
         result_text = string.Empty;
+        all_system_prompts.Clear();
+        in_user_question = string.Empty;
+        reason_finish = string.Empty;
+
     }
 
+    public void ClearQuestion()
+    {
+        //clear reusable variables
+        in_user_question = string.Empty;
+        reason_finish = string.Empty;
+        result_text = string.Empty;
+        options.Messages.Clear();
+        current_msgs_string = String.Empty;
+
+        //add any existing prompts
+        foreach(ChatMessage c in all_system_prompts)
+        {
+            options.Messages.Add(c);
+            //display the current list of messages
+            current_msgs_string += $"ROLE:\t{c.Role}\nCONTENT:\t{c.Content}\n\n";
+        }
+    }
 
     private void MsgRoleChanged(ChangeEventArgs e)
     {
@@ -133,16 +173,11 @@
         {
             if (options.Messages.Count >= 1)
             {
-                UseAzure = true;
-                if (UseAzure)
+                if (in_user_question.Length > 3)
                 {
-                    client = new OpenAIClient(new Uri(AzureOpenAIUrlGPT), new AzureKeyCredential(SecretKeyGPT));
+                    options.Messages.Add(new ChatMessage() { Role = "user", Content = in_user_question });
                 }
-                else
-                {
-                    client = new OpenAIClient(SecretKey);
-                    current_model = "gpt-3.5-turbo";
-                }
+                client = new OpenAIClient(new Uri(AzureOpenAIUrlGPT), new AzureKeyCredential(SecretKeyGPT));
                 var response = await client.GetChatCompletionsAsync(current_model, options);
                 ChatCompletions completions = response.Value;
 
@@ -152,6 +187,19 @@
 
                 return result_text;
 
+            }
+            else if (options.Messages.Count == 0 && in_user_question.Length > 3)
+            {
+                options.Messages.Add(new ChatMessage() { Role = "user", Content = in_user_question });
+                client = new OpenAIClient(new Uri(AzureOpenAIUrlGPT), new AzureKeyCredential(SecretKeyGPT));
+                var response = await client.GetChatCompletionsAsync(current_model, options);
+                ChatCompletions completions = response.Value;
+
+                //display the results and the reason for finishing
+                reason_finish = $"\t[Finish Reason: {completions.Choices[0].FinishReason.ToString()}]";
+                result_text = $"{completions.Choices[0].Message.Content.ToString()}";
+
+                return result_text;
             }
             else
             {
